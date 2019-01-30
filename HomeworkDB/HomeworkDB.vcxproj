@@ -115,6 +115,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\HomeworkDB\export.h" />
+    <ClInclude Include="include\HomeworkDB\status.h" />
+    <ClInclude Include="index\index.h" />
+    <ClInclude Include="index\trivialIndex.h" />
+    <ClInclude Include="table\row.h" />
+    <ClInclude Include="table\table.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="table\table.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -14,4 +14,29 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\HomeworkDB\export.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="table\table.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\HomeworkDB\status.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="table\row.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="index\index.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="index\trivialIndex.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="table\table.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>
