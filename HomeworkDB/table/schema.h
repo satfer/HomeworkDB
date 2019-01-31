@@ -17,7 +17,7 @@ public:
 
 	Schema(const Schema &) = delete;
 	Schema & operator=(const Schema &) = delete;
-	Schema & operator=(const Schema &&a) { type_ = a.type_; handler_ = a.handler_; }
+	Schema & operator=(Schema &&a) { type_ = a.type_; handler_ = a.handler_; }
 
 	// const std::string & operator[] (const std::string &attr) { return schema_[attr]; }
 	const std::string & getType(const std::string &attr) { return type_[attr]; }
@@ -29,6 +29,7 @@ private:
 
 // 类型处理 机. 抽象基类基本只是为了方便用指针, 比如vector<TypeHandler *>
 class TypeHandler {
+public:
 	TypeHandler() = default;
 	~TypeHandler() = default;
 	virtual void read() = 0;
@@ -36,7 +37,11 @@ class TypeHandler {
 };
 
 class INTEGER: public TypeHandler {
-	INTEGER();
+public:
+	INTEGER() = default;
+	INTEGER(int n);
+	~INTEGER();
+	INTEGER & operator=(INTEGER &&);
 	void read();
 	void toWrite();
 };

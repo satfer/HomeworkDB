@@ -27,15 +27,24 @@
     <ClInclude Include="table\row.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="index\index.h">
+    <ClInclude Include="table\index.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="index\trivialIndex.h">
+    <ClInclude Include="table\trivialIndex.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="table\schema.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SQL\SQL.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="table\table.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="table\schema.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
