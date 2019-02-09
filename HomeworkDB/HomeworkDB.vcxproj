@@ -115,18 +115,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="dbgen.h" />
     <ClInclude Include="include\HomeworkDB\export.h" />
     <ClInclude Include="include\HomeworkDB\status.h" />
     <ClInclude Include="SQL\SQL.h" />
     <ClInclude Include="table\index.h" />
     <ClInclude Include="table\row.h" />
-    <ClInclude Include="table\schema.h" />
-    <ClInclude Include="table\table.h" />
     <ClInclude Include="table\trivialIndex.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="table\schema.cpp" />
-    <ClCompile Include="table\table.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

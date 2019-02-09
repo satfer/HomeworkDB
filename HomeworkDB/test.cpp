@@ -1,9 +1,10 @@
-#include ".."
+#include <cstdlib>
+#include "dbgen.h"
 
 int main() {
-	// 打开文件
-	// 生成 std::vector<std::string> words
-	tt = Table(words);
+	dbgen();
+	system("pause");
+	return 0;
 	// tt.INSERT(xx.tbl)
 }
 
