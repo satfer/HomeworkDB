@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <cstring>
 
-int dbgen() {
+void dbgen() {
 	FILE *fpr, *fpDB, *fpIndex, *fpSchema;
 	char c;
 	int i;

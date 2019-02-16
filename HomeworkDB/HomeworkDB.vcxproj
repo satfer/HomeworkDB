@@ -121,9 +121,15 @@
     <ClInclude Include="SQL\SQL.h" />
     <ClInclude Include="table\index.h" />
     <ClInclude Include="table\row.h" />
+    <ClInclude Include="table\schema.h" />
+    <ClInclude Include="table\table.h" />
     <ClInclude Include="table\trivialIndex.h" />
+    <ClInclude Include="util\hash.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="table\index.cpp" />
+    <ClCompile Include="table\schema.cpp" />
+    <ClCompile Include="table\table.cpp" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
