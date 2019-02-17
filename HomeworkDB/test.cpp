@@ -6,6 +6,7 @@
 
 int trivialHash(int a) { return a; } // 啥都不做
 unsigned short cat16Hash(int a) { return (unsigned short)(a & 0xFFFF); }
+int cat24Hash(int a) { return a & 0x00FFFFF; }
 
 int main() {
 	if (0)
@@ -21,9 +22,9 @@ int main() {
 
 		printf("%d\n", 1 >> 33);
 
-		std::vector<int> blockSizes{ 2,4,16,256,1024 };
+		std::vector<int> blockSizes{ 2,4,16,256 };
 		for (int blockSize : blockSizes) {
-			ExtendibleHashIndex<int, unsigned short> exHash(blockSize, cat16Hash);
+			ExtendibleHashIndex<int, unsigned short> exHash(blockSize, 16, cat16Hash);
 			int i;
 			for (i = 0; i <= 24; ++i) {
 				exHash.INSERT(i, numberIndex.eq(&i));
@@ -35,8 +36,8 @@ int main() {
 			//记录查询时间
 		}
 		std::vector<int> blockSizes2{ 16,256,1024 };
-		for (int blockSize : blockSizes2) {
-			ExtendibleHashIndex<int, int> exHash(blockSize, trivialHash);
+		for (int blockSize : blockSizes) {
+			ExtendibleHashIndex<int, int> exHash(blockSize, 24, cat24Hash);
 			int i;
 			for (i = 0; i <= 24; ++i) {
 				exHash.INSERT(i, numberIndex.eq(&i));
@@ -47,6 +48,8 @@ int main() {
 			//记录生成时间
 			//记录查询时间
 		}
+
+
 	}
 
 	system("pause");

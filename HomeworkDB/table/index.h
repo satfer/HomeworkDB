@@ -72,7 +72,7 @@ private:
 	std::vector<fpos_t> positions_;
 };
 
-template <typename hashType> // 存的hash后的type
+template <typename hashType> // 存的hash后的type, 比如用int存, 但可能只用了24位
 class Block { // 可扩展散列表 线性散列表 通用
 // 要么放在前面, 要么声明下class Block; vs的报错是在用Block的地方 缺少类型说明符 - 假定为 int。注意: C++ 不支持默认 int
 public:
@@ -102,15 +102,16 @@ private:
 	fpos_t *positions_; // 行开始的位置
 };
 
-template <typename T, typename hashType> // 前一个是键的类型, 后一个是键hash后的类型
+template <typename T, typename hashType> // 前一个是键的类型, 后一个是键hash后的储存类型, useBit_限制用的位
 class ExtendibleHashIndex { //: public Index {
 public:
-	ExtendibleHashIndex(int blockSize, hashType (*hash)(int)) {
+	ExtendibleHashIndex(int blockSize, int useBit, hashType (*hash)(int)) {
 		assert(typeid(T) == typeid(int));
 		i_ = 1;
 		size_ = 2;
 		assert(blockSize > 0);
 		blockSize_ = blockSize;
+		useBit_ = useBit;
 		bucket_ = new Block<hashType>* [size_];
 		bucket_[0] = new Block<hashType>(blockSize);
 		bucket_[1] = new Block<hashType>(blockSize);
@@ -135,7 +136,7 @@ public:
 	void INSERT(int key, fpos_t fpos) {
 		assert(typeid(T) == typeid(int));
 		hashType hkey = hash_(key);
-		hkey >>= sizeof(hashType) * 8 - i_; // hkey >> (32 - i_); 熟悉下优先级
+		hkey >>= useBit_ - i_; // hkey >> (32 - i_); 熟悉下优先级
 		if (bucket_[hkey]->fullBool()) {
 			if (bucket_[hkey]->getJ() < i_) { // 块分裂
 				Block<hashType>* tempBlock[3]; // 1 2 是拆成的新块, 2暂存bucket_[hkey], 完事把2指向的块删了
@@ -147,15 +148,15 @@ public:
 				for (int k = 0; k < blockSize_; ++k) {
 					// bucket_[hkey]的第k个, 其key第j+1位为0的放进tempBlock[0], 为1的放进tempBlock[1]
 					// unsigned short用了>> 和<<回自动变成int ??? 绝了... 但>>=不变?
-					tempBlock[(bucket_[hkey]->getKeys()[k] << preJ >> sizeof(hashType) * 8  - 1) & 1]->INSERT(bucket_[hkey]->getKeys()[k], bucket_[hkey]->getPositions()[k]); // 熟悉下优先级
+					tempBlock[(bucket_[hkey]->getKeys()[k] << preJ >> useBit_  - 1) & 1]->INSERT(bucket_[hkey]->getKeys()[k], bucket_[hkey]->getPositions()[k]); // 熟悉下优先级
 				}
 				// 受影响的并不止这两个块, 书上描述有误
 				// delete bucket_[hkey]; // 释放bucket_[hkey >> 1 << 1] 和 bucket_[hkey >> 1 << 1 & 1] 指向的同一个块
 				//bucket_[hkey >> 1 << 1] = tempBlock[0];
 				//bucket_[(hkey >> 1 << 1)+1] = tempBlock[1];
 				tempBlock[2] = bucket_[hkey];
-				int from = bucket_[hkey]->getKeys()[0] >> sizeof(hashType) * 8 - preJ << i_ - preJ; //bucket_[hkey]是满的,所以bucket_[hkey]->getKeys()[0]没问题
-				int to = (bucket_[hkey]->getKeys()[0] >> sizeof(hashType) * 8 - preJ) + 1 << i_ - preJ;
+				int from = bucket_[hkey]->getKeys()[0] >> useBit_ - preJ << i_ - preJ; //bucket_[hkey]是满的,所以bucket_[hkey]->getKeys()[0]没问题
+				int to = (bucket_[hkey]->getKeys()[0] >> useBit_ - preJ) + 1 << i_ - preJ;
 				for (int k = from; k < to; ++k) { // 受影响的块是前preJ位相同的i位数且指向原bucket_[hkey]的
 					if (bucket_[k] == tempBlock[2])
 						bucket_[k] = tempBlock[(k << preJ >> i_ - 1) & 1]; // k是i_位数(二进制), 求其第preJ+1位
@@ -164,6 +165,7 @@ public:
 			}
 			else { // bucket_[hkey]->j_ == i_ 桶容量翻倍
 				++i_;
+				assert(i_ <= useBit_);
 				size_ *= 2;
 				Block<hashType>** tempBucket = new Block<hashType>*[size_];
 				for (int k = 0; k < size_; ++k) {
@@ -184,7 +186,7 @@ public:
 	fpos_t eq(void *a) {
 		assert(typeid(T) == typeid(int));
 		int ia = *((int *)a);
-		Block<hashType> *tempBlock = bucket_[hash_(ia) >> sizeof(hashType) * 8 - i_];
+		Block<hashType> *tempBlock = bucket_[hash_(ia) >> useBit_ - i_];
 		for (int k = 0; k < tempBlock->getCount(); ++k) {
 			if (ia == tempBlock->getKeys()[k])
 				return tempBlock->getPositions()[k];
@@ -196,6 +198,7 @@ private:
 	int i_;
 	int size_; // size_ == 2 ** i_
 	int blockSize_;
+	int useBit_; // 用int存到Block里, 但可能只用24位, 和hash_函数是配套的
 	Block<hashType> **bucket_; // 桶: 块的指针的数组
 	hashType (*hash_)(int);
 };
