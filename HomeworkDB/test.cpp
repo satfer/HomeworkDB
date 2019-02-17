@@ -27,29 +27,41 @@ int main() {
 			ExtendibleHashIndex<int, unsigned short> exHash(blockSize, 16, cat16Hash);
 			int i;
 			for (i = 0; i <= 24; ++i) {
-				exHash.INSERT(i, numberIndex.eq(&i));
+				exHash.INSERT(i, cat16Hash(i), numberIndex.eq(&i)); // 不用内部的hash_算 是为了效率, 之后要把数据库写完的话, 这层肯定要封装的
 			}
 			i = 23;
-			nation.print(exHash.eq(&i));
+			nation.print(exHash.eq(&i)[0]);
 			//记录内存
 			//记录生成时间
 			//记录查询时间
 		}
-		std::vector<int> blockSizes2{ 16,256,1024 };
+		//for (int blockSize : blockSizes) {
+		//	ExtendibleHashIndex<int, int> exHash(blockSize, 24, cat24Hash);
+		//	int i;
+		//	for (i = 0; i <= 24; ++i) {
+		//		exHash.INSERT(i, numberIndex.eq(&i));
+		//	}
+		//	i = 23;
+		//	nation.print(exHash.eq(&i));
+		//	//记录内存
+		//	//记录生成时间
+		//	//记录查询时间
+		//}
+
+		printf("\nLinearHashIndex:\n");
+		std::vector<int> blockSizes3{ 2,4 };
+		std::vector<double> thresholds{ 0.6, 0.7, 0.8, 0.85 };
 		for (int blockSize : blockSizes) {
-			ExtendibleHashIndex<int, int> exHash(blockSize, 24, cat24Hash);
-			int i;
-			for (i = 0; i <= 24; ++i) {
-				exHash.INSERT(i, numberIndex.eq(&i));
+			for (int threshold : thresholds) {
+				LinearHashIndex<int, unsigned short> liHash(blockSize, threshold, cat16Hash);
+				int i;
+				for (i = 0; i <= 24; ++i) {
+					liHash.INSERT(i, cat16Hash(i), numberIndex.eq(&i)); // 不用内部的hash_算 是为了效率, 之后要把数据库写完的话, 这层肯定要封装的
+				}
+				i = 23;
+				nation.print(liHash.eq(&i)[0]);
 			}
-			i = 23;
-			nation.print(exHash.eq(&i));
-			//记录内存
-			//记录生成时间
-			//记录查询时间
 		}
-
-
 	}
 
 	system("pause");
