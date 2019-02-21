@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <cassert>
+#include <iostream>
 
 #define MainIndex SortedIndex
 
@@ -133,13 +134,15 @@ public:
 		//for (int k = 0; k < size_; ++k)
 		//	delete bucket_[k];
 		//这样会去delete已经delete的东西, 然后报错
-		std::set< Block<T, hashType>*> haveBeenDelete;
+
+		// 这析构效率极低, 别析构了(反正内存够
+		/*std::set< Block<T, hashType>*> haveBeenDelete;
 		for (int k = 0; k < size_; ++k) {
 			if (haveBeenDelete.count(bucket_[k]) == 0) {
 				delete bucket_[k];
 				haveBeenDelete.insert(bucket_[k]);
 			}
-		}
+		}*/
 		delete[] bucket_;
 	}
 	ExtendibleHashIndex(const ExtendibleHashIndex &) = delete;
@@ -205,7 +208,7 @@ public:
 
 private:
 	int i_; // 使用的位数
-	int size_; // size_ == 2 ** i_
+	unsigned int size_; // size_ == 2 ** i_
 	int blockSize_; // 块的大小
 	int useBit_; // 用int存到Block里, 但可能只用24位, 和hash_函数是配套的
 	Block<T, hashType> **bucket_; // 桶: 块的指针的数组
@@ -255,12 +258,12 @@ public:
 	}
 private:
 	int size_; // 块的大小
-	int count_;
-	T *rawKeys_;
-	hashType *keys_; // 储存原key, 桶数组翻倍的时候方便
+	int count_; // 记录的数量
+	T *rawKeys_; // 储存原key
+	hashType *keys_; // 储存hash值
 	fpos_t *positions_; // 行开始的位置
 
-	Block2 *next_;
+	Block2 *next_; // 链表形式的溢出块
 };
 
 template <typename T, typename hashType>
@@ -333,13 +336,13 @@ public:
 		return pBlock->eq(ia);
 	}
 private:
-	int i_;
-	int n_;
-	int r_;
-	int blockSize_;
-	double threshold_;
-	hashType (*hash_)(T);
-	std::vector<Block2<T, hashType>*> bucket_;
+	int i_; // 使用的位数
+	int n_; // 桶的总数
+	int r_; // 记录的总数
+	int blockSize_; // 块的大小
+	double threshold_; // r/n的阈值
+	hashType (*hash_)(T); // 散列函数
+	std::vector<Block2<T, hashType>*> bucket_; // 桶数组
 	unsigned int low_[33]{ 0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095,
 		0x00001FFF, 0x00003FFF, 0x00007FFF, 0x0000FFFF,
 		0x0001FFFF, 0x0003FFFF, 0x0007FFFF, 0x000FFFFF,
@@ -367,8 +370,9 @@ public:
 	BPlusTreeNode(const BPlusTreeNode &) = delete;
 	BPlusTreeNode & operator=(const BPlusTreeNode &) = delete;
 
-	virtual std::vector<fpos_t> find(const T &key) = 0;
-	virtual void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *newp) = 0; // 后两个参数 相当于返回值, 用于递归分裂
+	virtual std::vector<fpos_t> find(const T &key, int limit = 1) = 0;
+	virtual void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *&newp) = 0; // 后两个参数 相当于返回值, 用于递归分裂
+	virtual void show() = 0;
 
 	virtual BPlusTreeNode ** getChildren() { throw("应该调用重载的函数."); }
 	virtual fpos_t * getPositions() { throw("应该调用重载的函数."); } //重载virtual可以让指向子类的父类指针访问子类的成员
@@ -376,9 +380,9 @@ public:
 	virtual void setNext(BPlusTreeLeaf<T> *) { throw("应该调用重载的函数."); }
 
 	//protect:
-	int size_;
-	int count_;
-	T *keys_;
+	int size_; // 键的最大数量
+	int count_; // 已使用的键的数量
+	T *keys_; // 键数组
 };
 
 template <typename T>
@@ -392,7 +396,7 @@ public:
 	BPlusTreeLeaf(const BPlusTreeLeaf &) = delete;
 	BPlusTreeLeaf & operator=(const BPlusTreeLeaf &) = delete;
 
-	std::vector<fpos_t> find(const T &key) {
+	std::vector<fpos_t> find(const T &key, int limit = 1) {
 		std::vector<fpos_t> ans;
 		// 二分法
 		int low = 0, high = this->count_ - 1, mid = (low + high) / 2; // 标号含low含high [low, high]
@@ -408,25 +412,38 @@ public:
 		if (high < low)
 			return ans; //空的
 
-		// 兼容可重复B+树(暂时只有这里写了, 非叶节点的查找(主要是空键的处理), 所有的插入都暂时没写)
+		// 可重复b+树 鸽了
 		// mid是找到的key, 找最前面的keys_[mid] == key
-		while (this->keys_[mid] == key)
-			--mid;
-		++mid; 
-		
+		//while (this->keys_[mid] == key)
+		//	--mid;
+		//++mid; 
 		// 可能重复到下一个块去了
+		//BPlusTreeLeaf *pLeaf = this;
+		//while (pLeaf) {
+		//	for (int i = (pLeaf == this ? mid : 0); i < pLeaf->count_; ++i) {
+		//		if (pLeaf->keys_[i] > key)
+		//			return ans; //带break效果
+		//		ans.push_back(pLeaf->positions_[i]);
+		//	}
+		//	pLeaf = pLeaf->next_;
+		//}
+		//return ans; // 查最后一个的时候刚好会出循环且无返回
+
 		BPlusTreeLeaf *pLeaf = this;
+		int j = limit;
 		while (pLeaf) {
 			for (int i = (pLeaf == this ? mid : 0); i < pLeaf->count_; ++i) {
-				if (pLeaf->keys_[i] > key)
-					return ans; //带break效果
 				ans.push_back(pLeaf->positions_[i]);
+				--j;
+				if (j == 0)
+					return ans;
 			}
 			pLeaf = pLeaf->next_;
 		}
+		return ans; // 防
 	}
 
-	void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *newp) {
+	void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *&newp) {
 		int low = 0, high = this->count_ - 1, mid = (low + high) / 2, k; // 标号含low含high [low, high]
 		while (high >= low) {
 			mid = (low + high) / 2;
@@ -456,7 +473,7 @@ public:
 			newp->count_ = this->count_ - newc;
 			this->count_ = newc;
 			memcpy(newp->keys_, this->keys_ + newc, sizeof(T) * newp->count_);
-			memcpy(newp->getPositions(), this->positions_ + newc, sizeof(T) * newp->count_);
+			memcpy(newp->getPositions(), this->positions_ + newc, sizeof(fpos_t) * newp->count_);
 
 			newkey = newp->keys_[0]; // 可重复b+树 这里要调整
 		}
@@ -466,12 +483,23 @@ public:
 		}
 	}
 
+	void show() {
+		std::cout << "size:" << this->size_ << " count:" << this->count_ << "\n";
+		int k;
+		for (k = 0; k < this->count_; ++k)
+			printf("%9d", this->keys_[k]);
+		std::cout << "\n";
+		for (k = 0; k < this->count_; ++k)
+			printf("%9lld", this->positions_[k]);
+		std::cout << "\n\n";
+	}
+
 	fpos_t * getPositions() { return positions_; } //重载virtual可以让指向子类的父类指针访问子类的成员
 	BPlusTreeLeaf * getNext() { return next_; }
 	void setNext(BPlusTreeLeaf * next) { next_ = next; }
 	//private:
-	fpos_t *positions_;
-	BPlusTreeLeaf *next_;
+	fpos_t *positions_; // 文件位置数组
+	BPlusTreeLeaf *next_; // 指向下一个叶子节点
 };
 
 template <typename T>
@@ -485,22 +513,22 @@ public:
 	BPlusTreeNotLeaf(const BPlusTreeNotLeaf &) = delete;
 	BPlusTreeNotLeaf & operator=(const BPlusTreeNotLeaf &) = delete;
 
-	std::vector<fpos_t> find(const T &key) {
+	std::vector<fpos_t> find(const T &key, int limit = 1) {
 		int low = 0, high = this->count_ - 1, mid = (low + high) / 2; // 标号含low含high [low, high]
 		while (high >= low) {
 			mid = (low + high) / 2;
 			if (this->keys_[mid] == key)
-				return children_[mid + 1]->find(key);
+				return children_[mid + 1]->find(key, limit);
 			else if (key < this->keys_[mid])
 				high = mid - 1;
 			else
 				low = mid + 1;
 		}
 		// 最后一次循环一定是 high==low 或者 high==low+1,  退出循环high==low-1, key在(keys_[high],keys_[low])里, keys_[-1]视为负无穷, keys_[conut_]视为正无穷
-		return children_[low]->find(key);
+		return children_[low]->find(key, limit);
 	}
 
-	void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *newp) {
+	void INSERT(const T &key, const fpos_t &fpos, T &newkey, BPlusTreeNode<T> *&newp) {
 		int low = 0, high = this->count_ - 1, mid = (low + high) / 2, k; // 标号含low含high [low, high]
 		while (high >= low) {
 			mid = (low + high) / 2;
@@ -519,7 +547,7 @@ public:
 				this->keys_[k + 1] = this->keys_[k];
 				children_[k + 2] = children_[k + 1];
 			}
-			this->keys_[low] = key;
+			this->keys_[low] = newkey;
 			children_[low + 1] = newp;
 			++this->count_;
 
@@ -531,7 +559,7 @@ public:
 				newp->count_ = this->count_ - newc - 1;
 				this->count_ = newc;
 				memcpy(newp->keys_, this->keys_ + newc + 1, sizeof(T) * newp->count_);
-				memcpy(newp->getChildren(), this->children_ + newc + 1, sizeof(T) * newp->count_ + 1);
+				memcpy(newp->getChildren(), this->children_ + newc + 1, sizeof(BPlusTreeNode<T> *) * (newp->count_ + 1));
 
 				newkey = this->keys_[newc]; // 可重复b+树 这里要调整
 			}
@@ -542,9 +570,20 @@ public:
 		}
 	}
 
+	void show() {
+		std::cout << "size:" << this->size_ << " count:" << this->count_ << "\n";
+		int k;
+		for (k = 0; k < this->count_; ++k)
+			printf("%9d", this->keys_[k]);
+		std::cout << "\n";
+		for (k = 0; k < this->count_ + 1; ++k)
+			this->children_[k]->show();
+		std::cout << "\n\n";
+	}
+
 	BPlusTreeNode<T> ** getChildren() { return children_; }
 	//private:
-	BPlusTreeNode<T> **children_;
+	BPlusTreeNode<T> **children_; // 指向子节点
 };
 
 template <typename T>
@@ -570,6 +609,11 @@ public:
 		return root_->find(b);
 	}
 
+	std::vector<fpos_t> ge(T a, int limit = INT_MAX) {
+
+		return root_->find(a, limit);
+	}
+
 	void INSERT(const T &key, const fpos_t &fpos) {
 		T newkey = -1;
 		BPlusTreeNode<T> *newp = nullptr;
@@ -583,6 +627,10 @@ public:
 
 			root_ = tempRoot;
 		}
+	}
+
+	void show() {
+		root_->show();
 	}
 
 	//private:
