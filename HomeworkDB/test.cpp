@@ -9,12 +9,12 @@ unsigned short cat16Hash(int a) { return (unsigned short)(a & 0xFFFF); }
 int cat24Hash(int a) { return a & 0x00FFFFF; }
 
 int main() {
-	if (0)
+	if (1)
 		dbgen();
 
 	if (1) {
-		Table nation("nation", "../instance/");
-		NumberIndex<int> numberIndex(std::string("N_NATIONKEY"), nation.location_ + nation.name_ + std::string(".index"));
+		Table nation("lineitem", "../instance/");
+		NumberIndex<int> numberIndex(std::string("tbd"), nation.location_ + nation.name_ + std::string(".index"));
 		int i = 22, j = 24;
 		nation.print(numberIndex.eq(&i));
 	
@@ -30,7 +30,7 @@ int main() {
 				exHash.INSERT(i, cat16Hash(i), numberIndex.eq(&i)); // 不用内部的hash_算 是为了效率, 之后要把数据库写完的话, 这层肯定要封装的
 			}
 			i = 23;
-			nation.print(exHash.eq(&i)[0]);
+			nation.print(exHash.eq(&i)[0], exHash.eq(&j)[0]);
 			//记录内存
 			//记录生成时间
 			//记录查询时间
@@ -42,7 +42,7 @@ int main() {
 		//		exHash.INSERT(i, numberIndex.eq(&i));
 		//	}
 		//	i = 23;
-		//	nation.print(exHash.eq(&i));
+		//	nation.print(exHash.eq(&i)[0], exHash.eq(&j)[0]);
 		//	//记录内存
 		//	//记录生成时间
 		//	//记录查询时间
@@ -52,15 +52,30 @@ int main() {
 		std::vector<int> blockSizes3{ 2,4 };
 		std::vector<double> thresholds{ 0.6, 0.7, 0.8, 0.85 };
 		for (int blockSize : blockSizes) {
-			for (int threshold : thresholds) {
+			for (double threshold : thresholds) {
 				LinearHashIndex<int, unsigned short> liHash(blockSize, threshold, cat16Hash);
 				int i;
 				for (i = 0; i <= 24; ++i) {
 					liHash.INSERT(i, cat16Hash(i), numberIndex.eq(&i)); // 不用内部的hash_算 是为了效率, 之后要把数据库写完的话, 这层肯定要封装的
 				}
 				i = 23;
-				nation.print(liHash.eq(&i)[0]);
+				nation.print(liHash.eq(&i)[0], liHash.eq(&j)[0]);
 			}
+		}
+
+		printf("\nBPlusTreeIndex:\n");
+		std::vector<int> blockSizes4{ 4,16,256,340,512 };
+		for (int blockSize : blockSizes4) {
+			BPlusTree<int> BPT(blockSize);
+			int i;
+			for (i = 0; i <= 24; ++i) {
+				BPT.INSERT(i, numberIndex.eq(&i));
+			}
+			i = 23;
+			nation.print(BPT.eq(&i)[0], BPT.eq(&j)[0]);
+			//记录内存
+			//记录生成时间
+			//记录查询时间
 		}
 	}
 

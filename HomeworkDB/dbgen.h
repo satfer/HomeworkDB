@@ -482,17 +482,17 @@ void dbgen() {
 	} // openFileFailed else
 
 	// LINEITEM
-	// 我把L_LINENUMBER换了下位置 放在最前面了, (也没太大必要 方便点点
 	if (fopen_s(&fpr, "../instance/lineitem.tbl", "r") || fopen_s(&fpDB, "../instance/lineitem.db", "wb") || \
 		fopen_s(&fpIndex, "../instance/lineitem.index", "wb") || fopen_s(&fpSchema, "../instance/lineitem.schema", "w")) {
 		throw("Open file failed.");
 	}
 	else {
 		// 存Schema
-		fprintf(fpSchema, "L_LINENUMBER INTEGER\n");
+		fprintf(fpSchema, "L_LKEY INTEGER\n");
 		fprintf(fpSchema, "L_ORDERKEY INTEGER\n");
 		fprintf(fpSchema, "L_PARTKEY INTEGER\n");
 		fprintf(fpSchema, "L_SUPPKEY INTEGER\n");
+		fprintf(fpSchema, "L_LINENUMBER INTEGER\n");
 		fprintf(fpSchema, "L_QUANTITY DOUBLE\n");
 		fprintf(fpSchema, "L_EXTENDEDPRICE DOUBLE\n");
 		fprintf(fpSchema, "L_DISCOUNT DOUBLE\n");
@@ -506,8 +506,8 @@ void dbgen() {
 		fprintf(fpSchema, "L_SHIPMODE CHAR(10)\n");
 		fprintf(fpSchema, "L_COMMENT VARCHAR(44)\n");
 
-		int L_LINENUMBER;
-		int L_ORDERKEY, L_PARTKEY, L_SUPPKEY;
+		int L_LKEY = -1;
+		int L_ORDERKEY, L_PARTKEY, L_SUPPKEY, L_LINENUMBER;
 		double L_QUANTITY, L_EXTENDEDPRICE, L_DISCOUNT, L_TAX;
 		char L_RETURNFLAG, L_LINESTATUS;
 		char L_SHIPDATE[10 + 1], L_COMMITDATE[10 + 1], L_RECEIPTDATE[10 + 1]; // DATE
@@ -561,15 +561,17 @@ void dbgen() {
 			L_COMMENT[i] = '\0';
 
 			// 存主索引(标号的索引), 用顺序表
+			++L_LKEY;
 			fgetpos(fpDB, &fpos);
-			fwrite(&L_LINENUMBER, sizeof(int), 1, fpIndex);
+			fwrite(&L_LKEY, sizeof(int), 1, fpIndex);
 			fwrite(&fpos, sizeof(fpos_t), 1, fpIndex);
 
 			// 存db
-			fwrite(&L_LINENUMBER, sizeof(int), 1, fpDB);
+			fwrite(&L_LKEY, sizeof(int), 1, fpDB);
 			fwrite(&L_ORDERKEY, sizeof(int), 1, fpDB);
 			fwrite(&L_PARTKEY, sizeof(int), 1, fpDB);
 			fwrite(&L_SUPPKEY, sizeof(int), 1, fpDB);
+			fwrite(&L_LINENUMBER, sizeof(int), 1, fpDB);
 			fwrite(&L_QUANTITY, sizeof(double), 1, fpDB);
 			fwrite(&L_EXTENDEDPRICE, sizeof(double), 1, fpDB);
 			fwrite(&L_DISCOUNT, sizeof(double), 1, fpDB);

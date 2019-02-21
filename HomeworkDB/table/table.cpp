@@ -3,7 +3,8 @@
 Table::Table(const std::string &name, const std::string &location = "/") : 
 	name_(name), location_(location), schema_(location_ + name_ + std::string(".schema"))
 {
-	fopen_s(&fp_, (location+name+std::string(".db")).c_str(), "r+");
+	if (fopen_s(&fp_, (location + name + std::string(".db")).c_str(), "r+"))
+		throw("Open .db file failed.");
 }
 
 //Table::Table(const std::vector<std::string> &words) {
@@ -37,6 +38,7 @@ void Table::print(const fpos_t &start, const fpos_t &end) {
 		char tempDate[11];
 		int lenth, i;
 		while (1) {
+			printf("\n");
 			for (auto type : schema_.types_) {
 				if (type == "INTEGER") {
 					fread(&tempInt, sizeof(int), 1, fp_);
@@ -103,7 +105,7 @@ void Table::print(const fpos_t &start, const fpos_t &end) {
 				else if (type == "DATE")
 					printf("%s ", tempDate);
 			} // for (type)
-			printf("\n");
+			//printf("\n");
 		} // while (1)
 	}
 }
